@@ -620,6 +620,13 @@ class TensorBoard(Callback):
             [details](https://www.tensorflow.org/how_tos/embedding_viz/#metadata_optional)
             about metadata files format. In case if the same metadata file is
             used for all embedding layers, string can be passed.
+        scalars: a dictionary mapping {name: tensorflow tensor} or
+            {name: callable}. Name is a string with the name of a variable
+            that should be logged for use with tensorboard. The values of the
+            dictionary are either tensorflow tensors that evaluate to scalars or
+            a function func(model) returning a tensorflow tensor evaluating to
+            a scalar. The keras model is passed to these functions as their only
+            argument.
     """
 
     def __init__(self, log_dir='./logs',
@@ -630,7 +637,8 @@ class TensorBoard(Callback):
                  write_images=False,
                  embeddings_freq=0,
                  embeddings_layer_names=None,
-                 embeddings_metadata=None):
+                 embeddings_metadata=None,
+                 scalars=None):
         super(TensorBoard, self).__init__()
         if K.backend() != 'tensorflow':
             raise RuntimeError('TensorBoard callback only works '
@@ -644,6 +652,7 @@ class TensorBoard(Callback):
         self.embeddings_freq = embeddings_freq
         self.embeddings_layer_names = embeddings_layer_names
         self.embeddings_metadata = embeddings_metadata or {}
+        self.scalars = scalars or dict()
         self.batch_size = batch_size
 
     def set_model(self, model):
@@ -702,6 +711,10 @@ class TensorBoard(Callback):
                 if hasattr(layer, 'output'):
                     tf.summary.histogram('{}_out'.format(layer.name),
                                          layer.output)
+        for name, scalar in self.scalars.items():
+            scalar = (scalar if isinstance(scalar, tf.Tensor)
+                      else scalar(self.model))
+            tf.summary.scalar(name, scalar)
         self.merged = tf.summary.merge_all()
 
         if self.write_graph:
