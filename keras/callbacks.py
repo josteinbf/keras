@@ -667,13 +667,16 @@ class TensorBoard(Callback):
                     if self.write_grads:
                         grads = model.optimizer.get_gradients(model.total_loss,
                                                               weight)
-
                         def is_indexed_slices(grad):
                             return type(grad).__name__ == 'IndexedSlices'
                         grads = [
                             grad.values if is_indexed_slices(grad) else grad
-                            for grad in grads]
-                        tf.summary.histogram('{}_grad'.format(mapped_weight_name), grads)
+                            for grad in grads
+                        ]
+                        tf.summary.histogram(
+                            '{}_grad'.format(mapped_weight_name),
+                            grads
+                        )
                     if self.write_images:
                         w_img = tf.squeeze(weight)
                         shape = K.int_shape(w_img)
@@ -727,8 +730,10 @@ class TensorBoard(Callback):
             embeddings_layer_names = self.embeddings_layer_names
 
             if not embeddings_layer_names:
-                embeddings_layer_names = [layer.name for layer in self.model.layers
-                                          if type(layer).__name__ == 'Embedding']
+                embeddings_layer_names = [
+                    layer.name for layer in self.model.layers
+                    if type(layer).__name__ == 'Embedding'
+                ]
 
             embeddings = {layer.name: layer.weights[0]
                           for layer in self.model.layers
